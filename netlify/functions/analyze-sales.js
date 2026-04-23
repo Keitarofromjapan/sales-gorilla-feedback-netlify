@@ -167,11 +167,16 @@ exports.handler = async function (event) {
     if (userId && !isSubscribed && db) {
       try {
         const today = new Date().toDateString();
+        const userDoc = await db.collection("users").doc(userId).get();
+        const userData = userDoc.data() || {};
+        const usageData = userData.usage || {};
+        const currentCount = (usageData.date === today ? usageData.count : 0) || 0;
+
         await db.collection("users").doc(userId).set(
           {
             usage: {
               date: today,
-              count: 1
+              count: currentCount + 1
             }
           },
           { merge: true }
