@@ -170,9 +170,9 @@ exports.handler = async function (event) {
     const feedback = safeJsonParse(outputText);
 
     if (!feedback) {
+      console.error("JSON parse failed. Output text:", outputText.substring(0, 500));
       return jsonResponse(500, {
-        error: "AIの回答がJSON形式ではありませんでした。もう一度お試しください。",
-        raw: outputText
+        error: "AIの回答がJSON形式ではありませんでした。もう一度お試しください。"
       });
     }
 
@@ -230,14 +230,18 @@ function safeJsonParse(value) {
       .replace(/```$/i, "")
       .trim();
 
-    const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+    const jsonMatch = cleaned.match(/\{[\s\S]*\}(?=\s*$)/);
     if (jsonMatch) {
       cleaned = jsonMatch[0];
     }
 
-    return JSON.parse(cleaned);
+    const parsed = JSON.parse(cleaned);
+    if (typeof parsed !== 'object' || parsed === null) {
+      throw new Error("Parsed value is not an object");
+    }
+    return parsed;
   } catch (error) {
-    console.error("JSON parse error:", error.message, "Input:", value.substring(0, 200));
+    console.error("JSON parse error:", error.message, "Input length:", value.length, "First 300 chars:", value.substring(0, 300));
     return null;
   }
 }
