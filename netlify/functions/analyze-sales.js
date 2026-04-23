@@ -81,8 +81,20 @@ exports.handler = async function (event) {
     return jsonResponse(400, { error: "提案内容を入力してください。" });
   }
 
+  let originalText = text;
+  let wasSummarized = false;
+
   if (text.length > 6000) {
-    return jsonResponse(400, { error: "入力が長すぎます。6000文字以内にしてください。" });
+    try {
+      text = await summarizeText(text, apiKey);
+      wasSummarized = true;
+      console.log(`Summarized from ${originalText.length} to ${text.length} characters`);
+    } catch (error) {
+      console.error("Summarization failed:", error.message);
+      return jsonResponse(500, {
+        error: "テキストの要約に失敗しました。もう一度お試しください。"
+      });
+    }
   }
 
   const authHeader = event.headers.authorization;
@@ -186,7 +198,10 @@ exports.handler = async function (event) {
       }
     }
 
-    return jsonResponse(200, normalizeFeedback(feedback));
+    return jsonResponse(200, {
+      ...normalizeFeedback(feedback),
+      wasSummarized
+    });
   } catch (error) {
     return jsonResponse(500, {
       error: error.message || "サーバー側でエラーが発生しました。"
@@ -247,6 +262,35 @@ function clampScore(value) {
   const number = Number(value);
   if (Number.isNaN(number)) return 60;
   return Math.max(0, Math.min(100, Math.round(number)));
+}
+
+async function summarizeText(longText, apiKey) {
+  const response = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: 800,
+      messages: [
+        {
+          role: "user",
+          content: `以下の営業商談記録またはメール内容を、重要な顧客課題・提案内容・懸念点を保ちながら6000文字以内に要約してください。\n\n${longText}`
+        }
+      ]
+    })
+  });
+
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(result.error?.message || "サマライズに失敗しました");
+  }
+
+  return extractOutputText(result);
 }
 
 function jsonResponse(statusCode, body) {

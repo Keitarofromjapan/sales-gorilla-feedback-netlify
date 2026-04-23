@@ -183,6 +183,12 @@ export function Home() {
 
             {error && <div className="error">{error}</div>}
 
+            {feedback && feedback.wasSummarized && (
+              <div style={{ marginTop: '14px', padding: '14px 16px', borderRadius: '18px', background: 'rgba(59, 130, 246, 0.14)', color: '#93c5fd', border: '1px solid rgba(59, 130, 246, 0.28)', fontSize: '14px' }}>
+                📌 長いテキストを検出したため、AIが自動で要約してからレビューしました
+              </div>
+            )}
+
             {feedback && (
               <div className="result">
                 <div className="score-card">
