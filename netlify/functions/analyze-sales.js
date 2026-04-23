@@ -142,7 +142,7 @@ exports.handler = async function (event) {
       },
       body: JSON.stringify({
         model,
-        max_tokens: 2000,
+        max_tokens: 1800,
         system: SYSTEM_PROMPT,
         messages: [
           {
