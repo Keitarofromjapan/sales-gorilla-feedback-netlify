@@ -75,7 +75,7 @@ exports.handler = async function (event) {
     return jsonResponse(400, { error: "JSONの形式が不正です。" });
   }
 
-  const text = String(body.text || "").trim();
+  let text = String(body.text || "").trim();
 
   if (!text) {
     return jsonResponse(400, { error: "提案内容を入力してください。" });
